@@ -3,3 +3,8 @@ vendor/
 node_modules/
 .github/
 public/build/*
+hot
+.claude
+CLAUDE.md
+.superpowers
+docs

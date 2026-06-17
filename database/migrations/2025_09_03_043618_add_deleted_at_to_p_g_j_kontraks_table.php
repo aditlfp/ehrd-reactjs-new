@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('mysqlEdata')->table('p_g_j__kontraks', function (Blueprint $table) {
-            $table->softDeletes(); // tambahkan deleted_at
+            // $table->softDeletes(); // tambahkan deleted_at
         });
     }
 
