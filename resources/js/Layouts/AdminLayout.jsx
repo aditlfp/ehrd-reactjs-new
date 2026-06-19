@@ -38,7 +38,7 @@ const nav = [
 
 function Sidebar({ auth, badges }) {
     return (
-        <aside className="relative flex h-full w-72 overflow-hidden bg-[#3f271b] text-[#fff7ea]">
+        <aside className="fixed left-0 top-0 z-50 flex h-full w-72 overflow-hidden bg-[#3f271b] text-[#fff7ea]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,231,194,0.18),transparent_32%),linear-gradient(180deg,#6f452c_0%,#3f271b_52%,#2b1a13_100%)]" />
             <div className="pointer-events-none absolute -right-24 top-24 size-56 rounded-full bg-[#d5a66c]/15 blur-3xl" />
             <div className="pointer-events-none absolute -left-20 bottom-20 size-48 rounded-full bg-[#f1d4aa]/10 blur-3xl" />
@@ -142,7 +142,7 @@ export default function AdminLayout({ title, children, actions }) {
             <div className="hidden border-r border-[#3f271b]/15 bg-[#3f271b] lg:block">
                 <Sidebar auth={auth} badges={badges} />
             </div>
-            <main className="min-w-0 flex-1">
+            <main className="min-w-0 flex-1 ml-0 lg:ml-72">
                 <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
                     <div className="flex min-h-16 flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-8">
                         <div className="flex items-center gap-3">
