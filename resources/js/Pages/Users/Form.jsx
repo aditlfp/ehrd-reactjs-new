@@ -34,10 +34,10 @@ export default function Form({ userModel, roles }) {
                         </div>
                     </CardHeader>
                     <CardContent className="grid gap-5 md:grid-cols-2">
-                        <TextField label="Name" error={errors.name} value={data.name} onChange={(e) => setData('name', e.target.value)} />
-                        <TextField label="Email" type="email" error={errors.email} value={data.email} onChange={(e) => setData('email', e.target.value)} />
-                        <TextField label="Password" type="password" error={errors.password} value={data.password} onChange={(e) => setData('password', e.target.value)} placeholder={editing ? 'Kosongkan jika tidak diganti' : ''} description={editing ? 'Isi hanya jika ingin mengganti password.' : undefined} />
-                        <TextField label="Email Verified At" type="datetime-local" error={errors.email_verified_at} value={data.email_verified_at || ''} onChange={(e) => setData('email_verified_at', e.target.value)} />
+                        <TextField label="Name" required placeholder="Masukkan name" error={errors.name} value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                        <TextField label="Email" required placeholder="Masukkan email" type="email" error={errors.email} value={data.email} onChange={(e) => setData('email', e.target.value)} />
+                        <TextField label="Password" required={!editing} type="password" error={errors.password} value={data.password} onChange={(e) => setData('password', e.target.value)} placeholder={editing ? 'Kosongkan jika tidak diganti' : ''} description={editing ? 'Isi hanya jika ingin mengganti password.' : undefined} />
+                        <TextField label="Email Verified At" placeholder="Pilih tanggal verifikasi email" type="datetime-local" error={errors.email_verified_at} value={data.email_verified_at || ''} onChange={(e) => setData('email_verified_at', e.target.value)} />
                         <FormField label="Avatar" error={errors.avatar} description="Gunakan gambar profil yang jelas."><Input type="file" onChange={(e) => setData('avatar', e.target.files[0])} /></FormField>
                         <div className="space-y-2">
                             <Label>Roles</Label>

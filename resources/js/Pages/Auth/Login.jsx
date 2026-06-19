@@ -95,7 +95,7 @@ export default function Login() {
 
                                 <form onSubmit={submit} className="space-y-5">
                                     <div className="space-y-2.5">
-                                        <Label className="text-sm font-medium text-[#4b3526]">Name / Email</Label>
+                                        <Label className="text-sm font-medium text-[#4b3526]">Name / Email <span className="text-red-500">*</span></Label>
                                         <div className="relative">
                                             <span className="pointer-events-none absolute left-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-xl bg-[#f1e3d1] text-[#8a5d37]">
                                                 <Mail className="size-4" />
@@ -103,6 +103,8 @@ export default function Login() {
                                             <Input
                                                 className="h-14 rounded-2xl border-[#ead9c2] bg-white/85 pl-14 text-[#332319] shadow-sm placeholder:text-[#b09a86] focus-visible:ring-[#9d744c]"
                                                 value={data.login}
+                                                placeholder="Masukkan name atau email"
+                                                required
                                                 onChange={(e) => setData('login', e.target.value)}
                                                 autoFocus
                                                 aria-invalid={Boolean(errors.login)}
@@ -112,7 +114,7 @@ export default function Login() {
                                     </div>
 
                                     <div className="space-y-2.5">
-                                        <Label className="text-sm font-medium text-[#4b3526]">Password</Label>
+                                        <Label className="text-sm font-medium text-[#4b3526]">Password <span className="text-red-500">*</span></Label>
                                         <div className="relative">
                                             <span className="pointer-events-none absolute left-3 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-xl bg-[#f1e3d1] text-[#8a5d37]">
                                                 <Lock className="size-4" />
@@ -121,6 +123,8 @@ export default function Login() {
                                                 className="h-14 rounded-2xl border-[#ead9c2] bg-white/85 pl-14 text-[#332319] shadow-sm placeholder:text-[#b09a86] focus-visible:ring-[#9d744c]"
                                                 type="password"
                                                 value={data.password}
+                                                placeholder="Masukkan password"
+                                                required
                                                 onChange={(e) => setData('password', e.target.value)}
                                                 aria-invalid={Boolean(errors.password)}
                                             />

@@ -174,8 +174,8 @@ class EmployeController extends Controller
             'id' => $employe->id,
             'name' => $employe->name,
             'ttl' => $employe->ttl,
-            'no_kk' => $employe->no_kk,
-            'no_ktp' => $employe->no_ktp,
+            'no_kk' => $this->decryptValue($employe->no_kk),
+            'no_ktp' => $this->decryptValue($employe->no_ktp),
             'client_id' => $employe->client_id,
             'client' => $employe->Client?->name,
             'initials' => $employe->initials,
@@ -193,6 +193,19 @@ class EmployeController extends Controller
             'no_induk' => trim(($employe->initials ?? '').' '.($employe->numbers ?? '').' '.($employe->date_real ? date('m-Y', strtotime($employe->date_real)) : '')),
             'created_at' => $employe->created_at?->toDateTimeString(),
         ];
+    }
+
+    private function decryptValue(?string $value): string
+    {
+        if (! $value) {
+            return '';
+        }
+
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Throwable) {
+            return $value;
+        }
     }
 
     private function makeInitials(string $name): string

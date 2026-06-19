@@ -44,15 +44,15 @@ export default function Form({ employe, clients }) {
                         </div>
                     </CardHeader>
                     <CardContent className="grid gap-5 md:grid-cols-3">
-                        <TextField label="Masukkan Nama" error={errors.name} value={data.name} onChange={(e) => setData('name', e.target.value)} />
-                        <TextField label="Tempat Tanggal Lahir" error={errors.ttl} value={data.ttl} onChange={(e) => setData('ttl', e.target.value)} className="md:col-span-2" />
-                        <TextField label="Masukkan No KK" error={errors.no_kk} value={data.no_kk} onChange={(e) => setData('no_kk', e.target.value)} />
-                        <TextField label="Masukkan No KTP" error={errors.no_ktp} value={data.no_ktp} onChange={(e) => setData('no_ktp', e.target.value)} />
-                        <SelectField label="Pilih Mitra" error={errors.client_id} value={data.client_id} onChange={(e) => setData('client_id', e.target.value)}><option value="">Pilih Mitra</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</SelectField>
-                        <TextField label="Inisial" error={errors.initials} value={data.initials} readOnly onChange={(e) => setData('initials', e.target.value)} description={!editing ? 'Terisi otomatis dari mitra.' : undefined} />
-                        <TextField label="Nomor Urut" error={errors.numbers} value={data.numbers} readOnly onChange={(e) => setData('numbers', e.target.value)} description={!editing ? 'Terisi otomatis dari mitra.' : undefined} />
-                        <TextField label="Tanggal Masuk" type="date" error={errors.date_real} value={data.date_real} onChange={(e) => setData('date_real', e.target.value)} />
-                        <TextareaField label="Alamat" error={errors.alamat} value={data.alamat} onChange={(e) => setData('alamat', e.target.value)} className="md:col-span-3" />
+                        <TextField label="Masukkan Nama" required placeholder="Masukkan nama" error={errors.name} value={data.name} onChange={(e) => setData('name', e.target.value)} />
+                        <TextField label="Tempat Tanggal Lahir" placeholder="Contoh: Jakarta, 01 Januari 1990" error={errors.ttl} value={data.ttl} onChange={(e) => setData('ttl', e.target.value)} className="md:col-span-2" />
+                        <TextField label="Masukkan No KK" required placeholder="Masukkan nomor KK" error={errors.no_kk} value={data.no_kk} onChange={(e) => setData('no_kk', e.target.value)} />
+                        <TextField label="Masukkan No KTP" required placeholder="Masukkan nomor KTP" error={errors.no_ktp} value={data.no_ktp} onChange={(e) => setData('no_ktp', e.target.value)} />
+                        <SelectField label="Pilih Mitra" required error={errors.client_id} value={data.client_id} onChange={(e) => setData('client_id', e.target.value)}><option value="">Pilih Mitra</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</SelectField>
+                        <TextField label="Inisial" required placeholder="Terisi otomatis" error={errors.initials} value={data.initials} readOnly onChange={(e) => setData('initials', e.target.value)} description={!editing ? 'Terisi otomatis dari mitra.' : undefined} />
+                        <TextField label="Nomor Urut" required placeholder="Terisi otomatis" error={errors.numbers} value={data.numbers} readOnly onChange={(e) => setData('numbers', e.target.value)} description={!editing ? 'Terisi otomatis dari mitra.' : undefined} />
+                        <TextField label="Tanggal Masuk" required placeholder="Pilih tanggal masuk" type="date" error={errors.date_real} value={data.date_real} onChange={(e) => setData('date_real', e.target.value)} />
+                        <TextareaField label="Alamat" placeholder="Masukkan alamat lengkap" error={errors.alamat} value={data.alamat} onChange={(e) => setData('alamat', e.target.value)} className="md:col-span-3" />
                     </CardContent>
                 </Card>
 
@@ -69,9 +69,9 @@ export default function Form({ employe, clients }) {
                     <CardContent className="grid gap-5 md:grid-cols-2">
                         <FormField label="Foto KTP (Depan)" error={errors.img_ktp_dpn}><Input type="file" onChange={(e) => setData('img_ktp_dpn', e.target.files[0])} /></FormField>
                         <FormField label="Foto Profile" error={errors.img}><Input type="file" onChange={(e) => setData('img', e.target.files[0])} /></FormField>
-                        <TextField label="No BPJS Kesehatan" error={errors.no_bpjs_kesehatan} value={data.no_bpjs_kesehatan} onChange={(e) => setData('no_bpjs_kesehatan', e.target.value)} />
+                        <TextField label="No BPJS Kesehatan" placeholder="Masukkan nomor BPJS Kesehatan" error={errors.no_bpjs_kesehatan} value={data.no_bpjs_kesehatan} onChange={(e) => setData('no_bpjs_kesehatan', e.target.value)} />
                         <FormField label="File BPJS Kesehatan" error={errors.file_bpjs_kesehatan}><Input type="file" accept="application/pdf" onChange={(e) => setData('file_bpjs_kesehatan', e.target.files[0])} /></FormField>
-                        <TextField label="No BPJS Ketenaga Kerjaan" error={errors.no_bpjs_ketenaga} value={data.no_bpjs_ketenaga} onChange={(e) => setData('no_bpjs_ketenaga', e.target.value)} />
+                        <TextField label="No BPJS Ketenaga Kerjaan" placeholder="Masukkan nomor BPJS Ketenagakerjaan" error={errors.no_bpjs_ketenaga} value={data.no_bpjs_ketenaga} onChange={(e) => setData('no_bpjs_ketenaga', e.target.value)} />
                         <FormField label="File BPJS Ketenaga Kerjaan" error={errors.file_bpjs_ketenaga}><Input type="file" accept="application/pdf" onChange={(e) => setData('file_bpjs_ketenaga', e.target.files[0])} /></FormField>
                         <div className="space-y-2 md:col-span-2">
                             <Label>Jenis BPJS</Label>

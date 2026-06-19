@@ -4,7 +4,7 @@ import { Button } from '@/Components/ui/button';
 import { Card, CardContent } from '@/Components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table';
 
-export function DataTable({ columns, rows, empty = 'Data kosong' }) {
+export function DataTable({ columns, rows, empty = 'Data kosong', rowClassName }) {
     return (
         <Card className="overflow-hidden">
             <CardContent className="p-0">
@@ -18,7 +18,7 @@ export function DataTable({ columns, rows, empty = 'Data kosong' }) {
                     </TableHeader>
                     <TableBody>
                         {rows?.length ? rows.map((row, index) => (
-                            <TableRow key={row.id ?? index}>
+                            <TableRow key={row.id ?? index} className={rowClassName?.(row, index)}>
                                 {columns.map((column) => (
                                     <TableCell key={column.key}>
                                         {column.render ? column.render(row, index) : row[column.key] ?? '-'}

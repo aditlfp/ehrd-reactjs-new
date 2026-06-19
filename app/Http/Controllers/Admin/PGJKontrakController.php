@@ -13,6 +13,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,21 +24,20 @@ class PGJKontrakController extends Controller
     {
         $query = PGJ_Kontrak::withTrashed()->latest('id');
 
-        $query->when($request->search, fn ($q, $search) => $q->search($search));
-        $query->when($request->status_pk_kda, fn ($q, $value) => $q->where('status_pk_kda', $value));
-        $query->when($request->jabatan_pk_kda, fn ($q, $value) => $q->where('jabatan_pk_kda', $value));
-        $query->when($request->unit_pk_kda, fn ($q, $value) => $q->where('unit_pk_kda', $value));
-        $query->when($request->kontrak_habis, fn ($q, $value) => $q->where('unit_pk_kda', $value)->whereDate('tgl_selesai_kontrak', '<=', now()));
+        $query->when($request->search, fn($q, $search) => $q->search($search));
+        $query->when($request->client_id, fn($q, $value) => $this->filterByClient($q, (int) $value));
+        $query->withoutTrashed();
 
-        if ($request->trashed === 'only') {
-            $query->onlyTrashed();
-        } elseif ($request->trashed !== 'with') {
-            $query->withoutTrashed();
-        }
+        $users = $request->client_id
+            ? $this->usersForClient($request)->paginate(10)->withQueryString()->through(fn(UserAbsensi $user) => $this->serializeUserContractRow($user))
+            : null;
 
         return Inertia::render('PGJKontrak/Index', [
-            'contracts' => $query->paginate(10)->withQueryString()->through(fn (PGJ_Kontrak $contract) => $this->serialize($contract)),
-            'filters' => $request->only(['search', 'status_pk_kda', 'jabatan_pk_kda', 'unit_pk_kda', 'kontrak_habis', 'trashed']),
+            'users' => $users,
+            'contracts' => null,
+            'clients' => $this->clientsWithPendingCounts(),
+            'selectedClient' => $request->client_id ? $this->clientWithPendingCount((int) $request->client_id) : null,
+            'filters' => $request->only(['search', 'client_id']),
             'filterOptions' => [
                 'statuses' => ['Karyawan Kontrak', 'Tetap', 'Karyawan Tetap'],
                 'jabatans' => PGJ_Kontrak::query()->select('jabatan_pk_kda')->distinct()->whereNotNull('jabatan_pk_kda')->pluck('jabatan_pk_kda'),
@@ -47,14 +47,23 @@ class PGJKontrakController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('PGJKontrak/Form', $this->formProps());
+        $prefillUserId = null;
+
+        if ($request->filled('u')) {
+            $prefillUserId = (int) Crypt::decryptString($request->string('u')->toString());
+        }
+
+        return Inertia::render('PGJKontrak/Form', $this->formProps(prefillUserId: $prefillUserId));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        PGJ_Kontrak::create($this->payload($request));
+        $payload = $this->payload($request);
+        $payload['nik_pk_kda'] = Crypt::encryptString($payload['nik_pk_kda']);
+
+        PGJ_Kontrak::create($payload);
 
         return redirect()->route('admin.pengajuan-kontrak.index')->with('success', 'Pengajuan kontrak berhasil dibuat.');
     }
@@ -66,7 +75,11 @@ class PGJKontrakController extends Controller
 
     public function update(Request $request, PGJ_Kontrak $pengajuan_kontrak): RedirectResponse
     {
-        $pengajuan_kontrak->update($this->payload($request));
+        $payload = $this->payload($request);
+        $payload['nama_pk_kda'] = $pengajuan_kontrak->nama_pk_kda;
+        $payload['nik_pk_kda'] = Crypt::encryptString($payload['nik_pk_kda']);
+
+        $pengajuan_kontrak->update($payload);
 
         return redirect()->route('admin.pengajuan-kontrak.index')->with('success', 'Pengajuan kontrak berhasil diupdate.');
     }
@@ -99,13 +112,15 @@ class PGJKontrakController extends Controller
 
     public function pdf(PGJ_Kontrak $pengajuan_kontrak)
     {
+        $pengajuan_kontrak->nik_pk_kda = $this->decryptValue($pengajuan_kontrak->nik_pk_kda);
         $pdf = Pdf::loadView('pdf.kontrak-page', ['kontrak' => $pengajuan_kontrak])->setPaper('a4', 'portrait');
 
-        return response()->streamDownload(fn () => print($pdf->output()), 'kontrak-karyawan-'.$pengajuan_kontrak->nama_pk_kda.date('Y-m-d').'.pdf');
+        return response()->streamDownload(fn() => print($pdf->output()), 'kontrak-karyawan-' . $pengajuan_kontrak->nama_pk_kda . date('Y-m-d') . '.pdf');
     }
 
     public function preview(PGJ_Kontrak $pengajuan_kontrak): Response
     {
+        $pengajuan_kontrak->nik_pk_kda = $this->decryptValue($pengajuan_kontrak->nik_pk_kda);
         $pdf = Pdf::loadView('pdf.kontrak-page', ['kontrak' => $pengajuan_kontrak])->setPaper('a4', 'portrait');
 
         return Inertia::render('PGJKontrak/Preview', [
@@ -132,21 +147,7 @@ class PGJKontrakController extends Controller
         $name = $request->string('name')->toString();
 
         if ($name) {
-            $selectedUser = UserAbsensi::where('nama_lengkap', $name)->first();
-            $selectedEmploye = Employe::where('name', $name)->first();
-            $ttl = explode(',', $selectedEmploye?->ttl ?? '');
-
-            return [
-                'detail' => [
-                    'jabatan_pk_kda' => $selectedUser?->jabatan?->name_jabatan ?? '',
-                    'unit_pk_kda' => $selectedUser?->client?->name ?? '',
-                    'nik_pk_kda' => $selectedEmploye?->no_ktp ?? '',
-                    'tempat_lahir_pk_kda' => trim($ttl[0] ?? ''),
-                    'tgl_lahir_pk_kda' => isset($ttl[1]) ? Carbon::parse(trim($ttl[1]))->format('Y-m-d') : '',
-                    'status_pk_kda' => $selectedUser?->status ?? '',
-                    'alamat_pk_kda' => $selectedEmploye?->alamat ?? '',
-                ],
-            ];
+            return ['detail' => $this->contractDetailForName($name)];
         }
 
         $mitraId = $request->integer('mitra_id') ?: null;
@@ -154,13 +155,43 @@ class PGJKontrakController extends Controller
         return ['people' => $this->peopleOptions($mitraId)];
     }
 
-    private function formProps(?PGJ_Kontrak $contract = null): array
+    private function contractDetailForName(string $name): array
     {
+        $selectedUser = UserAbsensi::where('nama_lengkap', $name)->first();
+        $selectedEmploye = Employe::where('name', $name)->first();
+        $ttl = explode(',', $selectedEmploye?->ttl ?? '');
+
+        $nik = $this->decryptValue($selectedEmploye?->no_ktp);
+
+        if ($this->looksEncrypted($nik)) {
+            $nik = $selectedUser?->nik ?? '';
+        }
+
+        return [
+            'jabatan_pk_kda' => $selectedUser?->jabatan?->name_jabatan ?? '',
+            'unit_pk_kda' => $selectedUser?->client?->name ?? '',
+            'nik_pk_kda' => $nik,
+            'tempat_lahir_pk_kda' => trim($ttl[0] ?? ''),
+            'tgl_lahir_pk_kda' => isset($ttl[1]) ? Carbon::parse(trim($ttl[1]))->format('Y-m-d') : '',
+            'status_pk_kda' => $selectedUser?->status ?? '',
+            'alamat_pk_kda' => $selectedEmploye?->alamat ?? '',
+        ];
+    }
+
+    private function formProps(?PGJ_Kontrak $contract = null, ?int $prefillUserId = null): array
+    {
+        $prefillUser = $prefillUserId ? UserAbsensi::with('Kerjasama.Client')->find($prefillUserId) : null;
+        $prefillDetail = $prefillUser ? $this->contractDetailForName($prefillUser->nama_lengkap) : null;
+        $mitraId = $contract ? $this->clientIdForContract($contract) : $prefillUser?->Kerjasama?->client_id;
+
         return [
             'contract' => $contract ? $this->serialize($contract) : null,
             'clients' => Client::orderBy('name')->get(['id', 'name']),
             'jabatans' => Jabatan::orderBy('name_jabatan')->pluck('name_jabatan'),
-            'people' => $this->peopleOptions(),
+            'people' => $contract ? [$contract->nama_pk_kda] : ($prefillUser ? [$prefillUser->nama_lengkap] : $this->peopleOptions()),
+            'mitraId' => $mitraId,
+            'prefillName' => $prefillUser?->nama_lengkap,
+            'prefillDetail' => $prefillDetail,
             'nextNoSurat' => $this->nextNoSurat(),
         ];
     }
@@ -190,10 +221,139 @@ class PGJKontrakController extends Controller
         ]);
     }
 
+    private function clientsWithPendingCounts()
+    {
+        return Client::orderBy('name')->get()->map(fn($client) => $this->setPendingContractsCount($client));
+    }
+
+    private function clientWithPendingCount(int $clientId): ?Client
+    {
+        $client = Client::find($clientId);
+
+        return $client ? $this->setPendingContractsCount($client) : null;
+    }
+
+    private function setPendingContractsCount(Client $client): Client
+    {
+        $query = PGJ_Kontrak::query()->withoutTrashed()->where('send_to_operator', 0);
+        $this->filterByClient($query, $client->id);
+
+        $client->pending_contracts_count = $query->count();
+
+        return $client;
+    }
+
+    private function usersForClient(Request $request)
+    {
+        return UserAbsensi::with(['Kerjasama.Client', 'Jabatan'])
+            ->whereHas('Kerjasama', fn($query) => $query->where('client_id', $request->integer('client_id')))
+            ->where('nama_lengkap', '!=', 'admin')
+            ->whereDoesntHave('Jabatan', fn($query) => $query->where('name_jabatan', 'DIREKSI'))
+            ->when($request->search, function ($query, $search) {
+                $query->where(function ($inner) use ($search) {
+                    $inner->where('nama_lengkap', 'like', "%{$search}%")
+                        ->orWhere('name', 'like', "%{$search}%")
+                        ->orWhereHas('Jabatan', fn($jabatan) => $jabatan->where('name_jabatan', 'like', "%{$search}%"))
+                        ->orWhereHas('Kerjasama.Client', fn($client) => $client->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->orderBy('nama_lengkap');
+    }
+
+    private function filterByClient($query, int $clientId): void
+    {
+        $client = Client::find($clientId, ['id', 'name']);
+        $userNames = UserAbsensi::whereHas('Kerjasama', fn($inner) => $inner->where('client_id', $clientId))->pluck('nama_lengkap');
+        $employeeNames = Employe::where('client_id', $clientId)->pluck('name');
+        $names = $userNames->merge($employeeNames)->filter()->unique()->values();
+
+        $query->where(function ($inner) use ($names, $client) {
+            $inner->whereIn('nama_pk_kda', $names);
+
+            if ($client) {
+                $inner->orWhere('unit_pk_kda', $client->name);
+            }
+        });
+    }
+
+    private function groupContractsByClient($contracts): array
+    {
+        $contracts = collect($contracts);
+        $names = $contracts->pluck('nama_pk_kda')->filter()->unique()->values();
+        $unitNames = $contracts->pluck('unit_pk_kda')->filter()->unique()->values();
+
+        $userClients = UserAbsensi::with('Kerjasama.Client')
+            ->whereIn('nama_lengkap', $names)
+            ->get()
+            ->filter(fn($user) => $user->Kerjasama?->Client)
+            ->mapWithKeys(fn($user) => [
+                $user->nama_lengkap => [
+                    'id' => $user->Kerjasama->Client->id,
+                    'name' => $user->Kerjasama->Client->name,
+                ],
+            ]);
+
+        $employeeClients = Employe::with('Client')
+            ->whereIn('name', $names)
+            ->get()
+            ->filter(fn($employee) => $employee->Client)
+            ->mapWithKeys(fn($employee) => [
+                $employee->name => [
+                    'id' => $employee->Client->id,
+                    'name' => $employee->Client->name,
+                ],
+            ]);
+
+        $unitClients = Client::whereIn('name', $unitNames)
+            ->get(['id', 'name'])
+            ->keyBy(fn($client) => mb_strtolower($client->name));
+
+        return $contracts
+            ->groupBy(function ($contract) use ($userClients, $employeeClients, $unitClients) {
+                $client = $userClients->get($contract['nama_pk_kda'])
+                    ?: $employeeClients->get($contract['nama_pk_kda'])
+                    ?: $unitClients->get(mb_strtolower($contract['unit_pk_kda'] ?? ''))?->only(['id', 'name'])->toArray()
+                    ?: ['id' => null, 'name' => 'Tanpa Mitra'];
+
+                return ($client['id'] ?? 'none') . '|' . ($client['name'] ?? 'Tanpa Mitra');
+            })
+            ->map(function ($clientContracts, $key) {
+                [$id, $name] = explode('|', $key, 2);
+
+                return [
+                    'id' => $id === 'none' ? null : (int) $id,
+                    'name' => $name,
+                    'contracts_count' => $clientContracts->count(),
+                    'users_count' => $clientContracts->pluck('nama_pk_kda')->unique()->count(),
+                    'contracts' => $clientContracts->values()->all(),
+                ];
+            })
+            ->sortBy('name')
+            ->values()
+            ->toArray();
+    }
+
+    private function clientIdForContract(PGJ_Kontrak $contract): ?int
+    {
+        $user = UserAbsensi::where('nama_lengkap', $contract->nama_pk_kda)->first();
+
+        if ($user?->Kerjasama?->client_id) {
+            return $user->Kerjasama->client_id;
+        }
+
+        $employee = Employe::where('name', $contract->nama_pk_kda)->first();
+
+        if ($employee?->client_id) {
+            return $employee->client_id;
+        }
+
+        return Client::where('name', $contract->unit_pk_kda)->value('id');
+    }
+
     private function peopleOptions(?int $mitraId = null): array
     {
         $edataDb = config('database.connections.mysqlEdata.database');
-        $contractTable = $edataDb.'.p_g_j__kontraks';
+        $contractTable = $edataDb . '.p_g_j__kontraks';
 
         $userAbsensi = UserAbsensi::where('nama_lengkap', '!=', 'admin')
             ->whereIn('nama_lengkap', function ($query) use ($contractTable) {
@@ -202,11 +362,11 @@ class PGJKontrakController extends Controller
             ->whereNotIn('nama_lengkap', function ($query) use ($contractTable) {
                 $query->select('nama_pk_kda')->from($contractTable)->whereNull('deleted_at')->whereDate('tgl_selesai_kontrak', '>', Carbon::today()->toDateString());
             })
-            ->when($mitraId, fn ($q) => $q->whereHas('kerjasama', fn ($inner) => $inner->where('client_id', $mitraId)))
+            ->when($mitraId, fn($q) => $q->whereHas('kerjasama', fn($inner) => $inner->where('client_id', $mitraId)))
             ->pluck('nama_lengkap', 'nama_lengkap')
             ->toArray();
 
-        $employees = Employe::when($mitraId, fn ($q) => $q->where('client_id', $mitraId))
+        $employees = Employe::when($mitraId, fn($q) => $q->where('client_id', $mitraId))
             ->whereNotIn('name', function ($query) use ($contractTable) {
                 $query->select('nama_pk_kda')->from($contractTable)->whereNull('deleted_at');
             })
@@ -221,13 +381,65 @@ class PGJKontrakController extends Controller
         $last = PGJ_Kontrak::orderBy('id', 'desc')->first();
 
         if (! $last) {
-            return '001/SAC/'.strtoupper(now()->format('m')).'/'.now()->year;
+            return '001/SAC/' . strtoupper(now()->format('m')) . '/' . now()->year;
         }
 
         $parts = explode('/', $last->no_srt);
         $parts[0] = (int) $parts[0] + 1;
 
         return implode('/', $parts);
+    }
+
+    private function looksEncrypted(?string $value): bool
+    {
+        if (! $value) {
+            return false;
+        }
+
+        $decoded = json_decode(base64_decode($value, true) ?: '', true);
+
+        return is_array($decoded) && isset($decoded['iv'], $decoded['value'], $decoded['mac']);
+    }
+
+    private function decryptValue(?string $value): string
+    {
+        if (! $value) {
+            return '';
+        }
+
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Throwable) {
+            try {
+                return (string) Crypt::decrypt($value);
+            } catch (\Throwable) {
+                return $value;
+            }
+        }
+    }
+
+    private function serializeUserContractRow(UserAbsensi $user): array
+    {
+        $contract = PGJ_Kontrak::query()
+            ->whereNull('deleted_at')
+            ->where('nama_pk_kda', $user->nama_lengkap)
+            ->latest('id')
+            ->first();
+
+        return [
+            'id' => $user->id,
+            'create_token' => Crypt::encryptString((string) $user->id),
+            'nama_lengkap' => $user->nama_lengkap,
+            'mitra' => $user->Kerjasama?->Client?->name ?? '-',
+            'jabatan' => $user->Jabatan?->name_jabatan ?? '-',
+            'contract' => $contract ? $this->serialize($contract) : null,
+            'masa_berlaku' => $contract ? $contract->tgl_mulai_kontrak . ' - ' . $contract->tgl_selesai_kontrak : null,
+            'ttd' => (bool) $contract?->ttd,
+            'send_to_operator' => (bool) $contract?->send_to_operator,
+            'expired' => $contract ? now()->greaterThan(Carbon::parse($contract->tgl_selesai_kontrak)) : false,
+            'keterangan' => $contract && now()->greaterThan(Carbon::parse($contract->tgl_selesai_kontrak)) ? 'Kontrak habis / expired' : '-',
+            'status_pengajuan_kontrak' => $contract?->status_pk_kda ?? 'Belum Pengajuan',
+        ];
     }
 
     private function serialize(PGJ_Kontrak $contract): array
@@ -244,7 +456,7 @@ class PGJKontrakController extends Controller
             'nama_pk_kda' => $contract->nama_pk_kda,
             'tempat_lahir_pk_kda' => $contract->tempat_lahir_pk_kda,
             'tgl_lahir_pk_kda' => $contract->tgl_lahir_pk_kda,
-            'nik_pk_kda' => $contract->nik_pk_kda,
+            'nik_pk_kda' => $this->decryptValue($contract->nik_pk_kda),
             'alamat_pk_kda' => $contract->alamat_pk_kda,
             'jabatan_pk_kda' => $contract->jabatan_pk_kda,
             'status_pk_kda' => $contract->status_pk_kda,
