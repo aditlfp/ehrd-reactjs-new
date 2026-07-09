@@ -1,21 +1,63 @@
 name: Deploy Laravel ke Jagoan Hosting
-
 on:
   push:
     branches:
       - main
 
 jobs:
-  deploy:
+  # ============================
+  # JOB 1: TEST
+  # ============================
+  test:
+    name: 🧪 Test
     runs-on: ubuntu-latest
-    # Pastikan job tidak berjalan lebih dari 10 menit agar tidak hang
     timeout-minutes: 10
-
     steps:
       - name: 🚚 Get latest code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, dom, fileinfo, mysql, sqlite3
+          coverage: none
+
+      - name: 📦 Install Composer Dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: 📝 Prepare .env for testing
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: 🧪 Run Laravel Tests
+        run: php artisan test
+
+  # ============================
+  # JOB 2: FTP DEPLOY (hanya jalan kalau job test PASS)
+  # ============================
+  ftp-deploy:
+    name: 📂 FTP Deploy
+    needs: test
+    if: needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v4
+
+      - name: 🐘 Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, dom, fileinfo, mysql, sqlite3
+          coverage: none
+
+      - name: 📦 Install Composer Dependencies (production)
+        run: composer install --prefer-dist --no-progress --no-interaction --no-dev --optimize-autoloader
+
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
@@ -39,8 +81,17 @@ jobs:
             .github/**
             README.md
             .env
+
+  # ============================
+  # JOB 3: NOTIFY (selalu jalan, laporkan status test & deploy)
+  # ============================
+  notify:
+    name: 📣 Notify
+    needs: [test, ftp-deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
       - name: Discord notification
-        if: always() # step ini tetap jalan meski gagal
         uses: Ilshidur/action-discord@master
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
@@ -48,7 +99,9 @@ jobs:
           DISCORD_AVATAR: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
         with:
           args: |
-            🚀 **Deploy status untuk ${{ github.repository }}**
+            ${{ needs.test.result == 'success' && (needs.ftp-deploy.result == 'success' && '✅ **TEST PASSED — Deploy berhasil**' || '⚠️ **TEST PASSED — tapi FTP Deploy GAGAL**') || '❌ **TEST FAILED — Deploy dibatalkan (FTP tidak dijalankan)**' }}
+            Repository: **${{ github.repository }}**
             Branch: `${{ github.ref_name }}`
             Commit: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-            Status: **${{ job.status }}**
+            Test status: **${{ needs.test.result }}**
+            FTP Deploy status: **${{ needs.ftp-deploy.result }}**

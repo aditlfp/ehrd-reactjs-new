@@ -84,6 +84,17 @@ export default function Form({
       );
   }, [data.nama_pk_kda]);
 
+  const formatRupiah = (value) => {
+    if (!value) return "";
+    const angka = value.toString().replace(/\D/g, ""); // buang semua selain digit
+    return new Intl.NumberFormat("id-ID").format(Number(angka));
+  };
+
+  const handleGajiChange = (e, type) => {
+    const rawAngka = e.target.value.replace(/\D/g, ""); // hanya simpan digit murni
+    setData(type, rawAngka);
+  };
+
   function submit(e) {
     e.preventDefault();
     post(
@@ -329,34 +340,38 @@ export default function Form({
             <TextField
               label="Gaji Pokok"
               placeholder="Masukkan gaji pokok"
-              type="number"
+              type="text"
+              inputMode="numeric"
               error={errors.g_pok}
-              value={data.g_pok}
-              onChange={(e) => setData("g_pok", e.target.value)}
+              value={data.g_pok ? `Rp ${formatRupiah(data.g_pok)}` : ""}
+              onChange={(e) => handleGajiChange(e, "g_pok")}
             />
             <TextField
               label="Tunjangan Kehadiran"
               placeholder="Masukkan tunjangan kehadiran"
-              type="number"
+              type="text"
+              inputMode="numeric"
               error={errors.tj_hadir}
-              value={data.tj_hadir}
-              onChange={(e) => setData("tj_hadir", e.target.value)}
+              value={data.tj_hadir ? `Rp ${formatRupiah(data.tj_hadir)}` : ""}
+              onChange={(e) => handleGajiChange(e, "tj_hadir")}
             />
             <TextField
               label="Kinerja"
               placeholder="Masukkan nilai kinerja"
-              type="number"
+              type="text"
+              inputMode="numeric"
               error={errors.kinerja}
-              value={data.kinerja}
-              onChange={(e) => setData("kinerja", e.target.value)}
+              value={data.kinerja ? `Rp ${formatRupiah(data.kinerja)}` : ""}
+              onChange={(e) => handleGajiChange(e, "kinerja")}
             />
             <TextField
               label="Lain Lain"
               placeholder="Masukkan nominal lain-lain"
-              type="number"
+              type="text"
+              inputMode="numeric"
               error={errors.lain_lain}
-              value={data.lain_lain}
-              onChange={(e) => setData("lain_lain", e.target.value)}
+              value={data.lain_lain ? `Rp ${formatRupiah(data.lain_lain)}` : ""}
+              onChange={(e) => handleGajiChange(e, "lain_lain")}
             />
           </CardContent>
         </Card>
