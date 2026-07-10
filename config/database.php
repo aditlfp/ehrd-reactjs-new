@@ -27,11 +27,11 @@ return [
         ],
 
         'mysqlEdata' => [
-            'driver' => 'mysql',
+            'driver' => env('DB_EDATA_CONNECTION', 'mysql'),
             'url' => env('DB2_URL'),
+            'database' => env('DB_EDATA_DATABASE', env('DB2_DATABASE', 'laravel')),
             'host' => env('DB2_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('DB2_PORT', env('DB_PORT', '3306')),
-            'database' => env('DB2_DATABASE', 'laravel'),
             'username' => env('DB2_USERNAME', env('DB_USERNAME', 'root')),
             'password' => env('DB2_PASSWORD', env('DB_PASSWORD', '')),
             'unix_socket' => env('DB2_SOCKET', env('DB_SOCKET', '')),
@@ -47,11 +47,11 @@ return [
         ],
 
         'mysql2connection' => [
-            'driver' => 'mysql',
+            'driver' => env('DB_MYSQL2_CONNECTION', 'mysql'),
             'url' => env('DB3_URL'),
+            'database' => env('DB_MYSQL2_DATABASE', env('DB3_DATABASE', 'laravel')),
             'host' => env('DB3_HOST', env('DB_HOST', '127.0.0.1')),
             'port' => env('DB3_PORT', env('DB_PORT', '3306')),
-            'database' => env('DB3_DATABASE', 'laravel'),
             'username' => env('DB3_USERNAME', env('DB_USERNAME', 'root')),
             'password' => env('DB3_PASSWORD', env('DB_PASSWORD', '')),
             'unix_socket' => env('DB3_SOCKET', env('DB_SOCKET', '')),

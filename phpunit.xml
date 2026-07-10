@@ -24,6 +24,10 @@
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
+        <env name="DB_EDATA_CONNECTION" value="sqlite"/>
+        <env name="DB_EDATA_DATABASE" value="C:/Users/USER/Desktop/Project/ehrd-inertia-react/database/testing_edata.sqlite"/>
+        <env name="DB_MYSQL2_CONNECTION" value="sqlite"/>
+        <env name="DB_MYSQL2_DATABASE" value="C:/Users/USER/Desktop/Project/ehrd-inertia-react/database/testing_mysql2.sqlite"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
