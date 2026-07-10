@@ -8,3 +8,7 @@ hot
 CLAUDE.md
 .superpowers
 docs
+
+# Test sqlite files
+database/testing_edata.sqlite
+database/testing_mysql2.sqlite
