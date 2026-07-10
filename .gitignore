@@ -1,7 +1,6 @@
 .env
 vendor/
 node_modules/
-.github/
 public/build/*
 hot
 .claude

@@ -26,6 +26,17 @@ jobs:
       - name: 📦 Install Composer Dependencies
         run: composer install --prefer-dist --no-progress --no-interaction
 
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: 📦 Install Node Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Assets
+        run: npm run build
+
       - name: 📝 Prepare .env for testing
         run: |
           cp .env.example .env
