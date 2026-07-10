@@ -87,11 +87,12 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           # Daftar file/folder yang tidak perlu diupload
           exclude: |
-            node_modules/**
-            .git/**
-            .github/**
-            README.md
+            **/.git/**
+            **/.github/**
+            **/node_modules/**
+            **/vendor/**
             .env
+            README.md
 
   # ============================
   # JOB 3: NOTIFY (selalu jalan, laporkan status test & deploy)
