@@ -33,8 +33,9 @@ export default function Index({ employes, filters, clients, positions }) {
       render: (row) => (
         <img
           src={
-            "https://absensi-sac.sac-po.com/storage/user/" + row.img ||
-            "https://placehold.co/400x400/png"
+            row.img
+              ? `https://absensi-sac.sac-po.com/storage/user/${row.img.replace(/^images\//, "")}`
+              : "https://placehold.co/400x400/png"
           }
           className="size-10 rounded-full border object-cover"
         />

@@ -22,6 +22,7 @@ import AdminLayout from "@/Layouts/AdminLayout";
 
 export default function Form({ employe, clients }) {
   const editing = Boolean(employe);
+  const originalClientId = String(employe?.client_id ?? "");
   const { data, setData, post, processing, errors } = useForm({
     name: employe?.name || "",
     ttl: employe?.ttl || "",
@@ -43,8 +44,12 @@ export default function Form({ employe, clients }) {
   });
 
   useEffect(() => {
-    if (!data.client_id || editing) return;
-    fetch(`/admin/employes/client-meta?client_id=${data.client_id}`)
+    const clientId = String(data.client_id ?? "");
+    if (!clientId) return;
+    // Saat edit, inisial dan nomor urut lama dipertahankan sampai mitra diganti.
+    if (editing && clientId === originalClientId) return;
+
+    fetch(`/admin/employes/client-meta?client_id=${clientId}`)
       .then((r) => r.json())
       .then((meta) => {
         setData((values) => ({
@@ -137,7 +142,11 @@ export default function Form({ employe, clients }) {
               value={data.initials}
               readOnly
               onChange={(e) => setData("initials", e.target.value)}
-              description={!editing ? "Terisi otomatis dari mitra." : undefined}
+              description={
+                editing
+                  ? "Terisi otomatis saat mitra diubah."
+                  : "Terisi otomatis dari mitra."
+              }
             />
             <TextField
               label="Nomor Urut"
@@ -147,7 +156,11 @@ export default function Form({ employe, clients }) {
               value={data.numbers}
               readOnly
               onChange={(e) => setData("numbers", e.target.value)}
-              description={!editing ? "Terisi otomatis dari mitra." : undefined}
+              description={
+                editing
+                  ? "Terisi otomatis saat mitra diubah."
+                  : "Terisi otomatis dari mitra."
+              }
             />
             <TextField
               label="Tanggal Masuk"
