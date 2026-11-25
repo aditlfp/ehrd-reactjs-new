@@ -86,15 +86,7 @@ class Employe extends Model
 
     public function getImgKtpDpnAttribute($value)
     {
-        if (! $value) {
-            return null;
-        }
-
-        if (! str_starts_with($value, 'images/')) {
-            return "images/{$value}";
-        }
-
-        return $value;
+        return $value ?: null;
     }
 
 
