@@ -25,7 +25,7 @@ export default function Form({ employe, clients }) {
   const editing = Boolean(employe);
   const originalClientId = String(employe?.client_id ?? "");
   const [previews, setPreviews] = useState({
-    img: `https://absensi-sac.sac-po.com/storage/user/${row.img.replace(/^images\//, "")}`,
+    img: `https://absensi-sac.sac-po.com/storage/user/${employe?.img.replace(/^images\//, "")}`,
     img_ktp_dpn:
       "https://absensi-sac.sac-po.com/storage/user/ktp/" + employe?.img_ktp_dpn,
   });
