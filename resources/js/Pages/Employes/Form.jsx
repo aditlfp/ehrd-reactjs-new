@@ -27,7 +27,7 @@ export default function Form({ employe, clients }) {
   const [previews, setPreviews] = useState({
     img: `https://absensi-sac.sac-po.com/storage/user/${employe?.img.replace(/^images\//, "")}`,
     img_ktp_dpn:
-      "https://absensi-sac.sac-po.com/storage/user/ktp/" + employe?.img_ktp_dpn,
+      "https://absensi-sac.sac-po.com/storage/user/" + employe?.img_ktp_dpn,
   });
   const { data, setData, post, processing, errors } = useForm({
     name: employe?.name || "",
