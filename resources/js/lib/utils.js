@@ -21,5 +21,5 @@ export function formatDateTime(value) {
 export function asset(path) {
     if (!path) return null;
     if (path.startsWith('http')) return path;
-    return `/storage/${path}`;
+    return new URL(`/storage/${path}`, window.location.origin).href;
 }
