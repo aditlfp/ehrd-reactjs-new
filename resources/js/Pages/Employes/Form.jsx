@@ -1,6 +1,6 @@
 import { Head, useForm } from "@inertiajs/react";
 import { FileText, Save, UserRound } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   FormField,
   SelectField,
@@ -19,10 +19,15 @@ import { Checkbox } from "@/Components/ui/checkbox";
 import { Input } from "@/Components/ui/input";
 import { Label } from "@/Components/ui/label";
 import AdminLayout from "@/Layouts/AdminLayout";
+import { asset } from "@/lib/utils";
 
 export default function Form({ employe, clients }) {
   const editing = Boolean(employe);
   const originalClientId = String(employe?.client_id ?? "");
+  const [previews, setPreviews] = useState({
+    img: asset(employe?.img),
+    img_ktp_dpn: asset(employe?.img_ktp_dpn),
+  });
   const { data, setData, post, processing, errors } = useForm({
     name: employe?.name || "",
     ttl: employe?.ttl || "",
@@ -65,6 +70,15 @@ export default function Form({ employe, clients }) {
     post(editing ? `/admin/employes/${employe.id}` : "/admin/employes", {
       forceFormData: true,
     });
+  }
+
+  function handleImageChange(field, file) {
+    if (!file) return;
+    setData(field, file);
+    setPreviews((current) => ({
+      ...current,
+      [field]: URL.createObjectURL(file),
+    }));
   }
 
   const bpjs = ["jkk", "jkm", "jht", "jp", "jkp"];
@@ -200,14 +214,32 @@ export default function Form({ employe, clients }) {
             <FormField label="Foto KTP (Depan)" error={errors.img_ktp_dpn}>
               <Input
                 type="file"
-                onChange={(e) => setData("img_ktp_dpn", e.target.files[0])}
+                accept="image/*"
+                onChange={(e) =>
+                  handleImageChange("img_ktp_dpn", e.target.files[0])
+                }
               />
+              {previews.img_ktp_dpn && (
+                <img
+                  src={previews.img_ktp_dpn}
+                  alt="Preview foto KTP"
+                  className="mt-2 h-32 w-full rounded-md border object-contain"
+                />
+              )}
             </FormField>
             <FormField label="Foto Profile" error={errors.img}>
               <Input
                 type="file"
-                onChange={(e) => setData("img", e.target.files[0])}
+                accept="image/*"
+                onChange={(e) => handleImageChange("img", e.target.files[0])}
               />
+              {previews.img && (
+                <img
+                  src={previews.img}
+                  alt="Preview foto profile"
+                  className="mt-2 size-32 rounded-md border object-cover"
+                />
+              )}
             </FormField>
             <TextField
               label="No BPJS Kesehatan"
